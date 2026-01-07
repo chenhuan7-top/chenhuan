@@ -1,66 +1,274 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "扣子编程 - AI 开发伙伴",
-  description: "扣子编程，你的 AI 开发伙伴已就位",
-};
+import { useState, useEffect, useRef } from "react";
 
-export default function Home() {
+export default function PersonalWebsite() {
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // 星空背景动画
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+
+    // 创建星星
+    const stars: Array<{ x: number; y: number; size: number; brightness: number; speed: number }> = [];
+    const numStars = 300;
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2 + 0.5,
+        brightness: Math.random(),
+        speed: Math.random() * 0.02 + 0.01
+      });
+    }
+
+    // 银河效果
+    let galaxyRotation = 0;
+
+    const animate = () => {
+      // 深邃背景渐变
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        canvas.width
+      );
+      gradient.addColorStop(0, "#0a0a1a");
+      gradient.addColorStop(0.5, "#050510");
+      gradient.addColorStop(1, "#000005");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 绘制银河
+      galaxyRotation += 0.0005;
+      ctx.save();
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(galaxyRotation);
+
+      for (let i = 0; i < 5; i++) {
+        const galaxyGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, canvas.width * 0.6);
+        galaxyGradient.addColorStop(0, `hsla(${220 + i * 20}, 60%, 50%, 0.05)`);
+        galaxyGradient.addColorStop(0.5, `hsla(${240 + i * 15}, 70%, 40%, 0.02)`);
+        galaxyGradient.addColorStop(1, "transparent");
+
+        ctx.fillStyle = galaxyGradient;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, canvas.width * 0.5, canvas.width * 0.15, (i * Math.PI) / 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // 绘制星星
+      stars.forEach((star) => {
+        star.brightness += star.speed;
+        const opacity = Math.sin(star.brightness) * 0.5 + 0.5;
+
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        ctx.fill();
+
+        // 为部分大星星添加光晕
+        if (star.size > 1.5) {
+          const glow = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.size * 4);
+          glow.addColorStop(0, `rgba(200, 220, 255, ${opacity * 0.3})`);
+          glow.addColorStop(1, "transparent");
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.size * 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+    };
+  }, []);
+
+  // 滚动聊天到底部
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // 发送消息
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = input.trim();
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setIsTyping(true);
+
+    // 模拟 bot 响应
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "你好！我是你的专属 AI 助手，很高兴为你服务！有什么我可以帮助你的吗？"
+        }
+      ]);
+      setIsTyping(false);
+    }, 1000);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white text-black transition-colors duration-300 dark:bg-black dark:text-white">
-      {/* 主容器 */}
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between px-16 py-32 sm:items-start">
-        {/* 头部：Logo 和 产品名称 */}
-        <div className="flex items-center gap-3">
-          {/* 注意：生产环境建议使用 next/image 并配置 remotePatterns */}
-          <img
-            className="dark:invert"
-            src="https://lf3-static.bytednsdoc.com/obj/eden-cn/hkpzboz/coze_logo.png"
-            alt="扣子编程 Logo"
-            width={40}
-            height={40}
-            style={{ width: "40px", height: "40px", objectFit: "contain" }}
-          />
-          <span className="text-xl font-bold tracking-tight text-black dark:text-zinc-50">
-            扣子编程
-          </span>
-        </div>
+    <div className="relative min-h-screen overflow-hidden">
+      {/* 星空背景 */}
+      <canvas ref={canvasRef} className="fixed inset-0 -z-10" />
 
-        {/* 中间内容区：主标题和副标题 */}
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xl text-4xl font-semibold leading-tight tracking-tight text-black dark:text-zinc-50">
-            扣子编程，你的 AI 开发伙伴已就位
+      {/* 主内容 */}
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4">
+        <div className="text-center space-y-6 max-w-3xl">
+          {/* 欢迎标题 */}
+          <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight">
+            欢迎来到我的空间
           </h1>
-          <p className="max-w-2xl text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            当前是空白入口文件，项目正在开发中，请稍候...
-            <br />
-            开发完成后界面将自动更新。如未自动更新成功，可以手动点击右上角刷新或重启按钮查看效果。
+
+          {/* 副标题 */}
+          <p className="text-xl md:text-2xl text-zinc-300 font-light leading-relaxed">
+            探索无限可能，体验智能对话
           </p>
+
+          {/* 分割线 */}
+          <div className="w-24 h-px bg-gradient-to-r from-transparent via-zinc-500 to-transparent mx-auto" />
+
+          {/* 描述文字 */}
+          <p className="text-lg text-zinc-400 font-light max-w-2xl mx-auto">
+            在这里，你可以与我的 AI Bot 进行深度交流，探索知识的边界
+          </p>
+
+          {/* 体验按钮 */}
+          <button
+            onClick={() => setShowChat(true)}
+            className="mt-8 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full
+                     border border-white/20 hover:bg-white/20 hover:scale-105
+                     transition-all duration-300 font-medium text-lg
+                     shadow-lg hover:shadow-xl"
+          >
+            开始体验 Bot
+          </button>
         </div>
 
-        {/* 底部按钮区 */}
-        <div className="flex w-full flex-col gap-4 text-base font-medium sm:w-auto sm:flex-row">
-          {/* 按钮 1：前往首页 */}
-          <a
-            className="flex h-12 w-full min-w-[160px] items-center justify-center gap-2 rounded-full bg-black px-8 text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 md:w-auto"
-            href="https://code.coze.cn/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            前往首页
-          </a>
-
-          {/* 按钮 2：查看文档 */}
-          <a
-            className="flex h-12 w-full min-w-[160px] items-center justify-center rounded-full border border-solid border-black/[.08] px-8 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-auto"
-            href="https://docs.coze.cn/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            查看文档
-          </a>
+        {/* 底部版权信息 */}
+        <div className="absolute bottom-8 text-zinc-500 text-sm">
+          © 2024 My Personal Space. All rights reserved.
         </div>
-      </main>
+      </div>
+
+      {/* Chat 弹窗 */}
+      {showChat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }}>
+          <div className="w-full max-w-2xl bg-zinc-900/95 backdrop-blur-sm rounded-2xl border border-zinc-700/50 overflow-hidden shadow-2xl">
+            {/* Chat 头部 */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                  <span className="text-white text-lg">🤖</span>
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold">我的 AI Bot</h3>
+                  <p className="text-zinc-400 text-sm">在线</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowChat(false)}
+                className="text-zinc-400 hover:text-white transition-colors p-2"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Chat 消息区 */}
+            <div ref={chatContainerRef} className="h-96 overflow-y-auto px-6 py-4 space-y-4">
+              {messages.length === 0 && (
+                <div className="text-center text-zinc-500 py-12">
+                  <p className="text-4xl mb-4">💬</p>
+                  <p>开始与我的 AI Bot 对话吧！</p>
+                </div>
+              )}
+
+              {messages.map((msg, index) => (
+                <div key={index} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    className={`max-w-[70%] px-4 py-3 rounded-2xl ${
+                      msg.role === "user"
+                        ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
+                        : "bg-zinc-800 text-zinc-200 border border-zinc-700"
+                    }`}
+                  >
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              ))}
+
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-zinc-800 text-zinc-200 px-4 py-3 rounded-2xl border border-zinc-700">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" />
+                      <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                      <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Chat 输入区 */}
+            <div className="border-t border-zinc-700/50 p-4">
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                  placeholder="输入你的消息..."
+                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-full px-4 py-3
+                           text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500
+                           transition-colors"
+                  disabled={isTyping}
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || isTyping}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full
+                           hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  发送
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
