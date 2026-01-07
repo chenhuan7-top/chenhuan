@@ -384,7 +384,7 @@ export default function PersonalWebsite() {
 
         {/* 底部版权信息 */}
         <div className="absolute bottom-8 text-slate-200/40 text-sm">
-          <p>© 2024 智能体研究空间 · 天启</p>
+          <p>© 2026 智能体研究空间 · 天启</p>
           <p className="text-xs mt-1">每颗星辰都有属于它的温度</p>
         </div>
       </div>
