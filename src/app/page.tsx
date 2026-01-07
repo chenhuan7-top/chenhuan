@@ -150,7 +150,7 @@ export default function PersonalWebsite() {
         body: JSON.stringify({
           message: userMessage,
           userId: `user_${Date.now()}`,
-          stream: true
+          stream: false
         })
       });
 
