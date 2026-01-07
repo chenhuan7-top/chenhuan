@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "我的个人空间 - AI Bot 体验",
-  description: "欢迎来到我的个人空间，与我的 AI Bot 进行深度交流",
+  title: "智能体研究空间 · 天启",
+  description: "探索 AI 的无限可能，由我打造的智能体将会像星辰一般闪耀下去",
 };
 
 export default function RootLayout({

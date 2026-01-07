@@ -13,7 +13,6 @@ export default function PersonalWebsite() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const currentAssistantMessageRef = useRef<string>("");
@@ -34,23 +33,86 @@ export default function PersonalWebsite() {
     window.addEventListener("resize", resizeCanvas);
 
     // 创建星星
-    const stars: Array<{ x: number; y: number; size: number; brightness: number; speed: number }> = [];
-    const numStars = 300;
+    interface Star {
+      x: number;
+      y: number;
+      size: number;
+      brightness: number;
+      speed: number;
+      color: string;
+      glowColor: string;
+    }
+
+    const stars: Star[] = [];
+    const numStars = 400;
+
+    // 温度色系：金色、橙色、淡粉色
+    const warmColors = [
+      "#FFD700", // 金色
+      "#FFA500", // 橙色
+      "#FFB6C1", // 淡粉色
+      "#FFF8DC", // 玉米色
+      "#FFFACD", // 柠檬绸色
+      "#FFEFD5", // 木瓜色
+    ];
+
     for (let i = 0; i < numStars; i++) {
+      const colorIndex = Math.floor(Math.random() * warmColors.length);
+      const size = Math.random() * 3 + 0.5;
+
       stars.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        size: Math.random() * 2 + 0.5,
+        size: size,
         brightness: Math.random(),
-        speed: Math.random() * 0.02 + 0.01
+        speed: Math.random() * 0.03 + 0.01,
+        color: warmColors[colorIndex],
+        glowColor: warmColors[colorIndex]
       });
     }
+
+    // 流星数组
+    interface Meteor {
+      x: number;
+      y: number;
+      length: number;
+      speed: number;
+      opacity: number;
+    }
+
+    let meteors: Meteor[] = [];
 
     // 银河效果
     let galaxyRotation = 0;
 
+    // 星云效果
+    interface Nebula {
+      x: number;
+      y: number;
+      radius: number;
+      hue: number;
+      opacity: number;
+    }
+
+    const nebulas: Nebula[] = [
+      { x: canvas.width * 0.3, y: canvas.height * 0.4, radius: 300, hue: 30, opacity: 0.1 },
+      { x: canvas.width * 0.7, y: canvas.height * 0.6, radius: 350, hue: 40, opacity: 0.08 },
+    ];
+
+    // 创建流星
+    const createMeteor = () => {
+      return {
+        x: Math.random() * canvas.width,
+        y: -100,
+        length: Math.random() * 100 + 50,
+        speed: Math.random() * 15 + 10,
+        opacity: 1
+      };
+    };
+
+    // 绘制函数
     const animate = () => {
-      // 深邃背景渐变
+      // 深邃背景渐变（添加温度感）
       const gradient = ctx.createRadialGradient(
         canvas.width / 2,
         canvas.height / 2,
@@ -59,51 +121,114 @@ export default function PersonalWebsite() {
         canvas.height / 2,
         canvas.width
       );
-      gradient.addColorStop(0, "#0a0a1a");
-      gradient.addColorStop(0.5, "#050510");
-      gradient.addColorStop(1, "#000005");
+      gradient.addColorStop(0, "#1a0a05"); // 中心：深棕色
+      gradient.addColorStop(0.3, "#0a050a"); // 中层：深紫
+      gradient.addColorStop(0.6, "#05050a"); // 外层：深蓝
+      gradient.addColorStop(1, "#000005"); // 边缘：黑
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 绘制银河
-      galaxyRotation += 0.0005;
+      // 绘制星云
+      nebulas.forEach(nebula => {
+        const nebulaGradient = ctx.createRadialGradient(
+          nebula.x, nebula.y, 0,
+          nebula.x, nebula.y, nebula.radius
+        );
+        nebulaGradient.addColorStop(0, `hsla(${nebula.hue}, 60%, 50%, ${nebula.opacity})`);
+        nebulaGradient.addColorStop(0.5, `hsla(${nebula.hue + 10}, 50%, 40%, ${nebula.opacity * 0.5})`);
+        nebulaGradient.addColorStop(1, "transparent");
+
+        ctx.fillStyle = nebulaGradient;
+        ctx.beginPath();
+        ctx.arc(nebula.x, nebula.y, nebula.radius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 绘制银河（增强温度感）
+      galaxyRotation += 0.0008;
       ctx.save();
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(galaxyRotation);
 
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 8; i++) {
         const galaxyGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, canvas.width * 0.6);
-        galaxyGradient.addColorStop(0, `hsla(${220 + i * 20}, 60%, 50%, 0.05)`);
-        galaxyGradient.addColorStop(0.5, `hsla(${240 + i * 15}, 70%, 40%, 0.02)`);
+        const hue = 25 + i * 5; // 金色到橙色的渐变
+        galaxyGradient.addColorStop(0, `hsla(${hue}, 70%, 60%, 0.08)`);
+        galaxyGradient.addColorStop(0.5, `hsla(${hue + 10}, 60%, 50%, 0.04)`);
         galaxyGradient.addColorStop(1, "transparent");
 
         ctx.fillStyle = galaxyGradient;
         ctx.beginPath();
-        ctx.ellipse(0, 0, canvas.width * 0.5, canvas.width * 0.15, (i * Math.PI) / 5, 0, Math.PI * 2);
+        ctx.ellipse(0, 0, canvas.width * 0.6, canvas.width * 0.18, (i * Math.PI) / 8, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
 
-      // 绘制星星
+      // 绘制星星（增强闪烁效果）
       stars.forEach((star) => {
         star.brightness += star.speed;
-        const opacity = Math.sin(star.brightness) * 0.5 + 0.5;
+        const opacity = Math.sin(star.brightness) * 0.7 + 0.3;
 
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-        ctx.fill();
-
-        // 为部分大星星添加光晕
-        if (star.size > 1.5) {
-          const glow = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.size * 4);
-          glow.addColorStop(0, `rgba(200, 220, 255, ${opacity * 0.3})`);
+        // 绘制光晕（增强温度感）
+        if (star.size > 2) {
+          const glow = ctx.createRadialGradient(
+            star.x, star.y, 0,
+            star.x, star.y, star.size * 6
+          );
+          glow.addColorStop(0, `${star.color}${Math.floor(opacity * 0.6).toString(16).padStart(2, '0')}`);
+          glow.addColorStop(0.5, `${star.color}${Math.floor(opacity * 0.3).toString(16).padStart(2, '0')}`);
           glow.addColorStop(1, "transparent");
+
           ctx.fillStyle = glow;
           ctx.beginPath();
-          ctx.arc(star.x, star.y, star.size * 4, 0, Math.PI * 2);
+          ctx.arc(star.x, star.y, star.size * 6, 0, Math.PI * 2);
           ctx.fill();
         }
+
+        // 绘制星星本体
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fillStyle = star.color;
+        ctx.globalAlpha = opacity;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      });
+
+      // 随机生成流星
+      if (Math.random() < 0.02) {
+        meteors.push(createMeteor());
+      }
+
+      // 绘制和更新流星
+      meteors = meteors.filter(meteor => {
+        meteor.x += meteor.speed;
+        meteor.y += meteor.speed * 0.6;
+        meteor.opacity -= 0.015;
+
+        if (meteor.opacity <= 0) return false;
+
+        // 绘制流星尾巴
+        const meteorGradient = ctx.createLinearGradient(
+          meteor.x, meteor.y,
+          meteor.x - meteor.length, meteor.y - meteor.length * 0.6
+        );
+        meteorGradient.addColorStop(0, `rgba(255, 215, 0, ${meteor.opacity})`);
+        meteorGradient.addColorStop(1, "transparent");
+
+        ctx.strokeStyle = meteorGradient;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(meteor.x, meteor.y);
+        ctx.lineTo(meteor.x - meteor.length, meteor.y - meteor.length * 0.6);
+        ctx.stroke();
+
+        // 流星头部
+        ctx.beginPath();
+        ctx.arc(meteor.x, meteor.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${meteor.opacity})`;
+        ctx.fill();
+
+        return true;
       });
 
       requestAnimationFrame(animate);
@@ -129,14 +254,11 @@ export default function PersonalWebsite() {
 
     const userMessage = input.trim();
     setInput("");
-    setError(null);
 
-    // 添加用户消息
     const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
     setMessages(newMessages);
     setIsLoading(true);
 
-    // 初始化助手消息
     currentAssistantMessageRef.current = "";
     const assistantMessageIndex = newMessages.length;
     setMessages([...newMessages, { role: "assistant", content: "", isStreaming: true }]);
@@ -159,56 +281,15 @@ export default function PersonalWebsite() {
         throw new Error(errorData.error || "请求失败");
       }
 
-      // 处理流式响应
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const data = await response.json();
+      const reply = data.reply || "抱歉，没有收到回复。";
 
-      if (!reader) {
-        throw new Error("无法读取响应流");
-      }
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6);
-            if (data === "[DONE]") {
-              break;
-            }
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.content) {
-                currentAssistantMessageRef.current += parsed.content;
-                setMessages((prev) => {
-                  const updated = [...prev];
-                  if (updated[assistantMessageIndex]) {
-                    updated[assistantMessageIndex] = {
-                      ...updated[assistantMessageIndex],
-                      content: currentAssistantMessageRef.current
-                    };
-                  }
-                  return updated;
-                });
-              }
-            } catch (e) {
-              console.error("Failed to parse SSE data:", e);
-            }
-          }
-        }
-      }
-
-      // 完成流式输出
       setMessages((prev) => {
         const updated = [...prev];
         if (updated[assistantMessageIndex]) {
           updated[assistantMessageIndex] = {
             ...updated[assistantMessageIndex],
+            content: reply,
             isStreaming: false
           };
         }
@@ -217,7 +298,6 @@ export default function PersonalWebsite() {
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "发送失败";
-      setError(errorMessage);
       setMessages((prev) => {
         const updated = [...prev];
         if (updated[assistantMessageIndex]) {
@@ -241,61 +321,95 @@ export default function PersonalWebsite() {
 
       {/* 主内容 */}
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4">
-        <div className="text-center space-y-6 max-w-3xl">
-          {/* 欢迎标题 */}
-          <h1 className="text-5xl md:text-7xl font-bold text-white tracking-tight">
-            欢迎来到我的空间
-          </h1>
+        <div className="text-center space-y-8 max-w-4xl">
+          {/* Logo 和标题 */}
+          <div className="space-y-4">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-2xl mb-4 animate-pulse">
+              <span className="text-4xl">✨</span>
+            </div>
+
+            <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-100 to-orange-200 tracking-tight drop-shadow-lg">
+              智能体研究空间
+            </h1>
+          </div>
 
           {/* 副标题 */}
-          <p className="text-xl md:text-2xl text-zinc-300 font-light leading-relaxed">
-            探索无限可能，体验智能对话
+          <p className="text-xl md:text-2xl text-amber-100/80 font-light leading-relaxed">
+            探索 AI 的无限可能，创造属于你的星辰
           </p>
+
+          {/* 理念展示 */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-amber-500/20 max-w-2xl mx-auto">
+            <p className="text-lg text-amber-50/70 font-light leading-relaxed italic">
+              "由我打造的智能体，将会像星辰一般闪耀下去"
+            </p>
+          </div>
 
           {/* 分割线 */}
-          <div className="w-24 h-px bg-gradient-to-r from-transparent via-zinc-500 to-transparent mx-auto" />
+          <div className="w-32 h-px bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mx-auto" />
 
           {/* 描述文字 */}
-          <p className="text-lg text-zinc-400 font-light max-w-2xl mx-auto">
-            在这里，你可以与我的 AI Bot 进行深度交流，探索知识的边界
-          </p>
+          <div className="text-amber-100/60 font-light max-w-2xl mx-auto space-y-2">
+            <p>在这里，我们研究智能体的温度与光芒</p>
+            <p>每一个智能体，都是一颗独特的星辰</p>
+            <p>在 AI 的星空中，闪耀着属于自己的光辉</p>
+          </div>
 
           {/* 体验按钮 */}
-          <button
-            onClick={() => setShowChat(true)}
-            className="mt-8 px-8 py-4 bg-white/10 backdrop-blur-sm text-white rounded-full
-                     border border-white/20 hover:bg-white/20 hover:scale-105
-                     transition-all duration-300 font-medium text-lg
-                     shadow-lg hover:shadow-xl"
-          >
-            开始体验 Bot
-          </button>
+          <div className="pt-4">
+            <button
+              onClick={() => setShowChat(true)}
+              className="px-10 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full
+                       border border-amber-400/30 hover:scale-105 hover:shadow-2xl hover:shadow-amber-500/30
+                       transition-all duration-300 font-medium text-lg
+                       backdrop-blur-sm"
+            >
+              🌟 与天启对话
+            </button>
+          </div>
+
+          {/* 特性标签 */}
+          <div className="flex flex-wrap justify-center gap-3 pt-6">
+            {["温度", "创新", "未来", "智慧", "探索"].map((tag) => (
+              <span
+                key={tag}
+                className="px-4 py-1.5 bg-white/5 backdrop-blur-sm text-amber-100/70 rounded-full
+                         border border-amber-500/20 text-sm font-light"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* 底部版权信息 */}
-        <div className="absolute bottom-8 text-zinc-500 text-sm">
-          © 2024 My Personal Space. All rights reserved.
+        <div className="absolute bottom-8 text-amber-200/40 text-sm">
+          <p>© 2024 智能体研究空间 · 天启</p>
+          <p className="text-xs mt-1">每颗星辰都有属于它的温度</p>
         </div>
       </div>
 
       {/* Chat 弹窗 */}
       {showChat && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0, 0, 0, 0.7)" }}>
-          <div className="w-full max-w-2xl bg-zinc-900/95 backdrop-blur-sm rounded-2xl border border-zinc-700/50 overflow-hidden shadow-2xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.8)" }}
+        >
+          <div className="w-full max-w-2xl bg-gradient-to-br from-zinc-900/98 to-zinc-800/98 backdrop-blur-sm rounded-2xl border border-amber-500/30 overflow-hidden shadow-2xl shadow-amber-500/20">
             {/* Chat 头部 */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700/50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-amber-500/20 bg-gradient-to-r from-amber-900/10 to-orange-900/10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                  <span className="text-white text-lg">🤖</span>
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                  <span className="text-2xl">🌟</span>
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold">我的 AI Bot</h3>
-                  <p className="text-zinc-400 text-sm">在线</p>
+                  <h3 className="text-white font-semibold text-lg">天启助手</h3>
+                  <p className="text-amber-200/60 text-sm">你的智能天象助手</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowChat(false)}
-                className="text-zinc-400 hover:text-white transition-colors p-2"
+                className="text-amber-200/60 hover:text-white transition-colors p-2 hover:bg-white/5 rounded-full"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -304,38 +418,39 @@ export default function PersonalWebsite() {
             </div>
 
             {/* Chat 消息区 */}
-            <div ref={chatContainerRef} className="h-96 overflow-y-auto px-6 py-4 space-y-4">
+            <div ref={chatContainerRef} className="h-96 overflow-y-auto px-6 py-4 space-y-4 bg-zinc-900/50">
               {messages.length === 0 && (
-                <div className="text-center text-zinc-500 py-12">
-                  <p className="text-4xl mb-4">💬</p>
-                  <p>开始与我的 AI Bot 对话吧！</p>
+                <div className="text-center text-amber-200/40 py-12">
+                  <div className="text-6xl mb-4">🌌</div>
+                  <p className="text-lg mb-2">欢迎来到智能体研究空间</p>
+                  <p className="text-sm">开始与天启对话吧，探索 AI 的温度与光芒</p>
                 </div>
               )}
 
               {messages.map((msg, index) => (
                 <div key={index} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[70%] px-4 py-3 rounded-2xl ${
+                    className={`max-w-[75%] px-4 py-3 rounded-2xl ${
                       msg.role === "user"
-                        ? "bg-gradient-to-br from-blue-600 to-purple-600 text-white"
-                        : "bg-zinc-800 text-zinc-200 border border-zinc-700"
+                        ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg"
+                        : "bg-zinc-800 text-amber-100 border border-amber-500/20"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                     {msg.isStreaming && (
-                      <span className="inline-block ml-1 animate-pulse">▋</span>
+                      <span className="inline-block ml-1 animate-pulse text-amber-400">✦</span>
                     )}
                   </div>
                 </div>
               ))}
 
-              {isLoading && !error && (
+              {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-zinc-800 text-zinc-200 px-4 py-3 rounded-2xl border border-zinc-700">
+                  <div className="bg-zinc-800 text-amber-100 px-4 py-3 rounded-2xl border border-amber-500/20">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" />
-                      <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                      <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                      <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" />
+                      <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                      <span className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
                     </div>
                   </div>
                 </div>
@@ -343,26 +458,29 @@ export default function PersonalWebsite() {
             </div>
 
             {/* Chat 输入区 */}
-            <div className="border-t border-zinc-700/50 p-4">
+            <div className="border-t border-amber-500/20 p-4 bg-gradient-to-r from-amber-900/5 to-orange-900/5">
               <div className="flex gap-3">
                 <input
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                  placeholder="输入你的消息..."
+                  placeholder="输入你的消息，探索星辰的奥秘..."
                   disabled={isLoading}
-                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-full px-4 py-3
-                           text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500
-                           transition-colors disabled:opacity-50"
+                  className="flex-1 bg-zinc-800/80 border border-amber-500/30 rounded-full px-5 py-3
+                           text-white placeholder-amber-200/40 focus:outline-none focus:border-amber-500/60
+                           focus:ring-2 focus:ring-amber-500/20 transition-all disabled:opacity-50"
                 />
                 <button
                   onClick={handleSendMessage}
                   disabled={!input.trim() || isLoading}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full
-                           hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full
+                           hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30
+                           transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100
+                           flex items-center gap-2"
                 >
-                  发送
+                  <span>发送</span>
+                  <span className="text-lg">✦</span>
                 </button>
               </div>
             </div>
