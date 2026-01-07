@@ -129,9 +129,17 @@ export async function POST(request: NextRequest) {
 
     // 处理非流式响应
     const data = await response.json();
-    const reply = data.data?.[0]?.content || "抱歉，没有收到回复。";
+    console.log("Coze API response:", JSON.stringify(data, null, 2));
 
-    return NextResponse.json({ reply });
+    // 尝试多种可能的回复字段
+    const reply =
+      data.data?.[0]?.content ||
+      data.messages?.[0]?.content ||
+      data.answer ||
+      data.reply ||
+      "抱歉，没有收到回复。";
+
+    return NextResponse.json({ reply, debug: process.env.NODE_ENV === "development" ? data : undefined });
 
   } catch (error) {
     console.error("Chat API error:", error);
