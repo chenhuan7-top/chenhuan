@@ -341,7 +341,7 @@ export default function PersonalWebsite() {
           {/* 理念展示 */}
           <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20 max-w-2xl mx-auto">
             <p className="text-lg text-slate-50/70 font-light leading-relaxed italic">
-              "由我打造的智能体，将会像星辰一般闪耀下去"
+              "每一份心血，都化作星辰微光"
             </p>
           </div>
 
