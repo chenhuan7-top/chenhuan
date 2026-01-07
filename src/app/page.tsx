@@ -2,13 +2,21 @@
 
 import { useState, useEffect, useRef } from "react";
 
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  isStreaming?: boolean;
+}
+
 export default function PersonalWebsite() {
   const [showChat, setShowChat] = useState(false);
-  const [messages, setMessages] = useState<Array<{ role: string; content: string }>>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const currentAssistantMessageRef = useRef<string>("");
 
   // 星空背景动画
   useEffect(() => {
@@ -115,26 +123,115 @@ export default function PersonalWebsite() {
     }
   }, [messages]);
 
-  // 发送消息
+  // 发送消息到 Coze Agent
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-    setIsTyping(true);
+    setError(null);
 
-    // 模拟 bot 响应
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "你好！我是你的专属 AI 助手，很高兴为你服务！有什么我可以帮助你的吗？"
+    // 添加用户消息
+    const newMessages: Message[] = [...messages, { role: "user", content: userMessage }];
+    setMessages(newMessages);
+    setIsLoading(true);
+
+    // 初始化助手消息
+    currentAssistantMessageRef.current = "";
+    const assistantMessageIndex = newMessages.length;
+    setMessages([...newMessages, { role: "assistant", content: "", isStreaming: true }]);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          userId: `user_${Date.now()}`,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "请求失败");
+      }
+
+      // 处理流式响应
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("无法读取响应流");
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") {
+              break;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                currentAssistantMessageRef.current += parsed.content;
+                setMessages((prev) => {
+                  const updated = [...prev];
+                  if (updated[assistantMessageIndex]) {
+                    updated[assistantMessageIndex] = {
+                      ...updated[assistantMessageIndex],
+                      content: currentAssistantMessageRef.current
+                    };
+                  }
+                  return updated;
+                });
+              }
+            } catch (e) {
+              console.error("Failed to parse SSE data:", e);
+            }
+          }
         }
-      ]);
-      setIsTyping(false);
-    }, 1000);
+      }
+
+      // 完成流式输出
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (updated[assistantMessageIndex]) {
+          updated[assistantMessageIndex] = {
+            ...updated[assistantMessageIndex],
+            isStreaming: false
+          };
+        }
+        return updated;
+      });
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "发送失败";
+      setError(errorMessage);
+      setMessages((prev) => {
+        const updated = [...prev];
+        if (updated[assistantMessageIndex]) {
+          updated[assistantMessageIndex] = {
+            ...updated[assistantMessageIndex],
+            content: `❌ ${errorMessage}`,
+            isStreaming: false
+          };
+        }
+        return updated;
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -225,11 +322,14 @@ export default function PersonalWebsite() {
                     }`}
                   >
                     <p className="whitespace-pre-wrap">{msg.content}</p>
+                    {msg.isStreaming && (
+                      <span className="inline-block ml-1 animate-pulse">▋</span>
+                    )}
                   </div>
                 </div>
               ))}
 
-              {isTyping && (
+              {isLoading && !error && (
                 <div className="flex justify-start">
                   <div className="bg-zinc-800 text-zinc-200 px-4 py-3 rounded-2xl border border-zinc-700">
                     <div className="flex gap-1">
@@ -249,16 +349,16 @@ export default function PersonalWebsite() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                  onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                   placeholder="输入你的消息..."
+                  disabled={isLoading}
                   className="flex-1 bg-zinc-800 border border-zinc-700 rounded-full px-4 py-3
                            text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500
-                           transition-colors"
-                  disabled={isTyping}
+                           transition-colors disabled:opacity-50"
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!input.trim() || isTyping}
+                  disabled={!input.trim() || isLoading}
                   className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full
                            hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:hover:scale-100"
                 >
