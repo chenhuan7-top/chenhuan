@@ -10,6 +10,7 @@ interface Message {
 
 export default function PersonalWebsite() {
   const [showChat, setShowChat] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -319,8 +320,77 @@ export default function PersonalWebsite() {
       {/* 星空背景 */}
       <canvas ref={canvasRef} className="fixed inset-0 -z-10" />
 
+      {/* 顶部导航栏 */}
+      <nav className="fixed top-0 left-0 right-0 z-40 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-400 to-cyan-500 flex items-center justify-center">
+              <span className="text-xl">✨</span>
+            </div>
+            <span className="text-white font-semibold text-lg">智能体研究空间</span>
+          </div>
+
+          {/* 菜单按钮 */}
+          <button
+            onClick={() => setShowMenu(!showMenu)}
+            className="text-white p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            {showMenu ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* 下拉菜单 */}
+        {showMenu && (
+          <div className="absolute right-6 top-16 w-48 bg-zinc-900/95 backdrop-blur-sm rounded-xl border border-cyan-500/20 shadow-2xl overflow-hidden">
+            <div className="py-2 space-y-1">
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); setShowChat(true); setShowMenu(false); }}
+                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-white/10 transition-colors"
+              >
+                <span>💬</span>
+                <span>与天启对话</span>
+              </a>
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); }}
+                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-white/10 transition-colors"
+              >
+                <span>🏠</span>
+                <span>首页</span>
+              </a>
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); }}
+                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-white/10 transition-colors"
+              >
+                <span>💡</span>
+                <span>关于我们</span>
+              </a>
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); }}
+                className="flex items-center gap-3 px-4 py-3 text-slate-200 hover:bg-white/10 transition-colors"
+              >
+                <span>📧</span>
+                <span>联系方式</span>
+              </a>
+            </div>
+          </div>
+        )}
+      </nav>
+
       {/* 主内容 */}
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 pt-20">
         <div className="text-center space-y-8 max-w-4xl">
           {/* Logo 和标题 */}
           <div className="space-y-4">
@@ -486,6 +556,18 @@ export default function PersonalWebsite() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 浮动聊天按钮（对话框关闭时显示） */}
+      {!showChat && (
+        <button
+          onClick={() => setShowChat(true)}
+          className="fixed bottom-8 right-8 z-40 w-16 h-16 rounded-full bg-gradient-to-r from-slate-500 to-cyan-500 text-white
+                   border border-cyan-400/30 hover:scale-110 hover:shadow-2xl hover:shadow-cyan-500/30
+                   transition-all duration-300 flex items-center justify-center shadow-lg backdrop-blur-sm"
+        >
+          <span className="text-2xl">💬</span>
+        </button>
       )}
     </div>
   );
