@@ -176,8 +176,8 @@ export default function PersonalWebsite() {
             star.x, star.y, 0,
             star.x, star.y, star.size * 6
           );
-          glow.addColorStop(0, `${star.color}${Math.floor(opacity * 0.6).toString(16).padStart(2, '0')}`);
-          glow.addColorStop(0.5, `${star.color}${Math.floor(opacity * 0.3).toString(16).padStart(2, '0')}`);
+          glow.addColorStop(0, `rgba(192, 224, 232, ${opacity * 0.6})`);
+          glow.addColorStop(0.5, `rgba(192, 224, 232, ${opacity * 0.3})`);
           glow.addColorStop(1, "transparent");
 
           ctx.fillStyle = glow;
